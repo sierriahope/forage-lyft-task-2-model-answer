@@ -1,0 +1,83 @@
+from datetime import datetime, timedelta
+
+class SpindlerBattery(Battery):
+    def __init__(self, last_service_date: datetime, current_date: datetime):
+        self.last_service_date = last_service_date
+        self.current_date = current_date
+
+    def needs_service(self) -> bool:
+        service_due_date = self.last_service_date + timedelta(days=1095)  # Upgraded to three years (1095 days)
+        return service_due_date < self.current_date
+
+class CarFactory:
+    @staticmethod
+    def create_car(engine, battery, tire_type, tire_wear_array):
+        return Car(engine, battery, tire_type, tire_wear_array)
+
+    @staticmethod
+    def create_carrigan_car(last_service_date, tire_wear_array, current_date):
+        engine = CapuletEngine()
+        battery = SpindlerBattery(last_service_date, current_date)
+        return CarFactory.create_car(engine, battery, "Carrigan", tire_wear_array)
+
+    @staticmethod
+    def create_octoprime_car(last_service_date, tire_wear_array, current_date):
+        engine = CapuletEngine()
+        battery = SpindlerBattery(last_service_date, current_date)
+        return CarFactory.create_car(engine, battery, "Octoprime", tire_wear_array)
+
+class Car:
+    def __init__(self, engine, battery, tire_type, tire_wear_array):
+        self.engine = engine
+        self.battery = battery
+        self.tire_type = tire_type
+        self.tire_wear_array = tire_wear_array
+
+    def needs_service(self) -> bool:
+        if self.tire_type == "Carrigan":
+            return any(wear >= 0.9 for wear in self.tire_wear_array)
+        elif self.tire_type == "Octoprime":
+            return sum(self.tire_wear_array) >= 3
+        else:
+            raise ValueError("Invalid tire type")
+
+# Unit tests for Spindler battery upgrade
+def test_spindler_battery_upgrade():
+    last_service_date = datetime(2020, 1, 1)
+    current_date = datetime(2023, 1, 1)
+
+    battery = SpindlerBattery(last_service_date, current_date)
+    assert battery.needs_service() == True
+
+    last_service_date = datetime(2022, 1, 1)
+
+    battery = SpindlerBattery(last_service_date, current_date)
+    assert battery.needs_service() == False
+
+# Unit tests for new tire servicing criteria
+def test_tire_servicing_criteria():
+    last_service_date = datetime(2022, 1, 1)
+    current_date = datetime(2023, 1, 1)
+    tire_wear_array = [0.8, 0.7, 0.9, 0.6]
+
+    car = CarFactory.create_carrigan_car(last_service_date, tire_wear_array, current_date)
+    assert car.needs_service() == True
+
+    tire_wear_array = [0.8, 0.7, 0.8, 0.6]
+
+    car = CarFactory.create_carrigan_car(last_service_date, tire_wear_array, current_date)
+    assert car.needs_service() == False
+
+    tire_wear_array = [0.8, 0.7, 0.9, 0.6]
+
+    car = CarFactory.create_octoprime_car(last_service_date, tire_wear_array, current_date)
+    assert car.needs_service() == False
+
+    tire_wear_array = [0.8, 0.7, 0.9, 1.0]
+
+    car = CarFactory.create_octoprime_car(last_service_date, tire_wear_array, current_date)
+    assert car.needs_service() == True
+
+# Run the unit tests
+test_spindler_battery_upgrade()
+test_tire_servicing_criteria()
